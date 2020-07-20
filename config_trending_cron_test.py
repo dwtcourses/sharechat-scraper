@@ -16,7 +16,8 @@ scraper_params = {
     "targeting": "tag",
     "is_cron_job": True
 }
-
+print("\nStarting test\nSHARECHAT_USER_ID =", scraper_params["USER_ID"])
+print("SHARECHAT_PASSWORD =", scraper_params["PASSCODE"], "\nCompleted test\n")
 
 if __name__ == "__main__":
     scraper_manager(scraper_params)

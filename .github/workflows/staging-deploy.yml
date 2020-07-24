@@ -43,4 +43,4 @@ jobs:
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_KEY }}
           script: |
-            ./autodeploy_scs.sh ${{ steps.vars.outputs.sha_short }} >> ~/deploy.log 2>&1
+            ./autodeploy_scs_rest.sh ${{ steps.vars.outputs.sha_short }} >> ~/deploy.log 2>&1

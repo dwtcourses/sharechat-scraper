@@ -513,7 +513,8 @@ def ml_sharechat_s3_upload(df, aws, bucket, s3):
                     # Upload media to S3
                 ml_upload_to_s3(s3=s3, file="temp.txt", filename=filename, bucket=bucket, content_type=row["media_type"])
                 os.remove("temp.txt")
-        except:
+        except Exception as e:
+            print(logging.traceback.format_exc())
             pass
     # Add S3 urls with correct extensions
     df.reset_index(inplace = True)

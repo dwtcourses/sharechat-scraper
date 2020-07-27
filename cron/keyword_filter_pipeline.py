@@ -103,7 +103,7 @@ class TranslateText(luigi.Task):
                         dump[doc_id] = translation 
                         time.sleep(uniform(3,5))
             out_file.write(json.dumps(dump))
-            print("TranslateTex() task complete")
+            print("TranslateText() task complete")
             print("Translated text written to out_file")
               
     def requires(self):

@@ -1,0 +1,49 @@
+2020-07-03 14:10:35,118 luigi.server[58113] INFO: Checking pid file
+2020-07-03 14:10:35,118 luigi.server[58113] INFO: Writing pid file
+2020-07-03 14:10:35,121 luigi.scheduler[58113] INFO: No prior state file exists at luigi/state. Starting with empty state
+2020-07-03 14:10:35,126 luigi.server[58113] INFO: Scheduler starting up
+2020-07-03 14:11:23,491 tornado.access[58113] INFO: 302 GET / (127.0.0.1) 1.97ms
+2020-07-03 14:11:23,544 tornado.access[58113] INFO: 200 GET /static/visualiser/index.html (127.0.0.1) 22.31ms
+2020-07-03 14:11:23,717 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/bootstrap3/css/bootstrap-theme.min.css (127.0.0.1) 7.37ms
+2020-07-03 14:11:23,729 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/bootstrap3/js/bootstrap.min.js (127.0.0.1) 8.90ms
+2020-07-03 14:11:23,754 tornado.access[58113] INFO: 200 GET /static/visualiser/css/tipsy.css (127.0.0.1) 5.07ms
+2020-07-03 14:11:23,775 tornado.access[58113] INFO: 200 GET /static/visualiser/css/font-awesome.min.css (127.0.0.1) 4.22ms
+2020-07-03 14:11:23,779 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/AdminLTE/css/skin-green-light.min.css (127.0.0.1) 2.23ms
+2020-07-03 14:11:23,784 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/datatables/css/jquery.dataTables.min.css (127.0.0.1) 2.73ms
+2020-07-03 14:11:23,787 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/bootstrap-toggle/css/bootstrap-toggle.min.css (127.0.0.1) 1.77ms
+2020-07-03 14:11:23,790 tornado.access[58113] INFO: 200 GET /static/visualiser/css/luigi.css (127.0.0.1) 2.53ms
+2020-07-03 14:11:23,828 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/bootstrap3/css/bootstrap.min.css (127.0.0.1) 127.83ms
+2020-07-03 14:11:23,837 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/mustache.js (127.0.0.1) 4.78ms
+2020-07-03 14:11:23,838 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/AdminLTE/css/AdminLTE.min.css (127.0.0.1) 80.33ms
+2020-07-03 14:11:23,849 tornado.access[58113] INFO: 200 GET /static/visualiser/js/visualiserApp.js (127.0.0.1) 7.26ms
+2020-07-03 14:11:23,852 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/d3/dagre-d3.min.js (127.0.0.1) 47.92ms
+2020-07-03 14:11:23,853 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/jquery-1.10.0.min.js (127.0.0.1) 34.86ms
+2020-07-03 14:11:23,892 tornado.access[58113] INFO: 200 GET /static/visualiser/js/luigi.js (127.0.0.1) 34.22ms
+2020-07-03 14:11:23,913 tornado.access[58113] INFO: 200 GET /static/visualiser/js/graph.js (127.0.0.1) 6.05ms
+2020-07-03 14:11:23,914 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/d3/d3.min.js (127.0.0.1) 122.68ms
+2020-07-03 14:11:23,929 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/URI/1.18.2/URI.js (127.0.0.1) 5.44ms
+2020-07-03 14:11:23,935 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/jquery.slimscroll.min.js (127.0.0.1) 1.41ms
+2020-07-03 14:11:23,939 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/AdminLTE/js/app.min.js (127.0.0.1) 1.87ms
+2020-07-03 14:11:23,943 tornado.access[58113] INFO: 200 GET /static/visualiser/js/tipsy.js (127.0.0.1) 1.71ms
+2020-07-03 14:11:23,945 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/datatables/js/jquery.dataTables.min.js (127.0.0.1) 45.92ms
+2020-07-03 14:11:23,948 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/bootstrap-toggle/js/bootstrap-toggle.min.js (127.0.0.1) 1.61ms
+2020-07-03 14:11:24,283 tornado.access[58113] INFO: 200 GET /api/has_task_history?data=%7B%7D (127.0.0.1) 2.29ms
+2020-07-03 14:11:24,288 tornado.access[58113] INFO: 200 GET /api/is_pause_enabled?data=%7B%7D (127.0.0.1) 2.30ms
+2020-07-03 14:11:24,289 tornado.access[58113] INFO: 200 GET /api/worker_list?data=%7B%7D (127.0.0.1) 0.99ms
+2020-07-03 14:11:24,293 tornado.access[58113] INFO: 200 GET /api/resource_list?data=%7B%7D (127.0.0.1) 0.96ms
+2020-07-03 14:11:24,312 tornado.access[58113] INFO: 200 GET /static/visualiser/lib/datatables/images/sort_both.png (127.0.0.1) 1.67ms
+2020-07-03 14:11:24,349 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22RUNNING%22%2C%22upstream_status%22%3A%22%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 3.35ms
+2020-07-03 14:11:24,361 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22BATCH_RUNNING%22%2C%22upstream_status%22%3A%22%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 7.75ms
+2020-07-03 14:11:24,388 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22DISABLED%22%2C%22upstream_status%22%3A%22%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 15.89ms
+2020-07-03 14:11:24,400 tornado.access[58113] INFO: 200 GET /static/visualiser/fonts/fontawesome-webfont.woff2?v=4.3.0 (127.0.0.1) 7.18ms
+2020-07-03 14:11:24,402 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22FAILED%22%2C%22upstream_status%22%3A%22%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 0.82ms
+2020-07-03 14:11:24,405 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22PENDING%22%2C%22upstream_status%22%3A%22UPSTREAM_FAILED%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 0.85ms
+2020-07-03 14:11:24,408 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22DONE%22%2C%22upstream_status%22%3A%22%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 0.84ms
+2020-07-03 14:11:24,411 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22PENDING%22%2C%22upstream_status%22%3A%22UPSTREAM_DISABLED%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 0.91ms
+2020-07-03 14:11:24,414 tornado.access[58113] INFO: 200 GET /api/task_list?data=%7B%22status%22%3A%22PENDING%22%2C%22upstream_status%22%3A%22%22%2C%22search%22%3A%22%22%7D (127.0.0.1) 2.58ms
+2020-07-03 14:11:24,426 tornado.access[58113] INFO: 200 GET /api/is_paused?data=%7B%7D (127.0.0.1) 0.76ms
+2020-07-03 14:11:24,503 tornado.access[58113] WARNING: 404 GET /favicon.ico (127.0.0.1) 1.06ms
+2020-07-03 14:52:31,164 luigi.server[59199] INFO: Checking pid file
+2020-07-03 14:52:31,166 luigi.server[59199] INFO: Server already running (pid=58113)
+2020-07-03 16:11:54,043 luigi.server[59759] INFO: Checking pid file
+2020-07-03 16:11:54,044 luigi.server[59759] INFO: Server already running (pid=58113)

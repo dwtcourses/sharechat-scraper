@@ -28,6 +28,8 @@ class SourceData(luigi.Task):
         return luigi.LocalTarget('urls.txt')
         
     def run(self):
+        print("Beginning SourceData() task ...")
+        print("Getting image urls from MongoDB ...")
         client = initialize_mongo()
         target = MongoCollectionTarget(client, self.db, self.collection)
         coll = target.get_collection()
@@ -42,6 +44,8 @@ class SourceData(luigi.Task):
                     doc_id = str(i["_id"])
                     dump[doc_id] = url
             out_file.write(json.dumps(dump))
+            print("SourceData() task complete")
+            print("Image urls written to out_file")
 
 
 class ExtractText(luigi.Task):
@@ -56,6 +60,8 @@ class ExtractText(luigi.Task):
         return luigi.LocalTarget("extracted_text.txt")
 
     def run(self):
+        print("Beginning ExtractText() task ...")
+        print("Extracting text from images ...")
         client = initialize_googleapi()
         with self.output().open("w") as out_file:
             dump = {}
@@ -66,6 +72,8 @@ class ExtractText(luigi.Task):
                         text = extract_text(client, url)
                         dump[doc_id] = text
             out_file.write(json.dumps(dump))
+            print("ExtractText() task complete")
+            print("Extracted text written to out_file")
 
     def requires(self):
         return SourceData(self.db, self.collection)
@@ -82,6 +90,8 @@ class TranslateText(luigi.Task):
         return luigi.LocalTarget("translated_text.txt")
 
     def run(self):
+        print("Beginning TranslateText() task ...")
+        print("Transating text to English ...")
         translator = initialize_translator()
         with self.output().open("w") as out_file:
             dump = {}
@@ -93,6 +103,8 @@ class TranslateText(luigi.Task):
                         dump[doc_id] = translation 
                         time.sleep(uniform(3,5))
             out_file.write(json.dumps(dump))
+            print("TranslateTex() task complete")
+            print("Translated text written to out_file")
               
     def requires(self):
         return ExtractText(self.db, self.collection)
@@ -110,6 +122,8 @@ class FilterText(luigi.Task):
         return luigi.LocalTarget("filtered_text.txt")
 
     def run(self):
+        print("Beginning FilterText() task ...")
+        print("Applying keyword filter to text ...")
         with self.output().open("w") as out_file:
             dump = {}
             with self.input().open("r") as in_file:
@@ -119,6 +133,8 @@ class FilterText(luigi.Task):
                         label = filter_text(translation)
                         dump[doc_id] = label
             out_file.write(json.dumps(dump))
+            print("FilterText() task complete")
+            print("Keyword filter labels written to out_file")
                         
     def requires(self):
         return TranslateText(self.db, self.collection)
@@ -133,6 +149,8 @@ class StoreLabel(luigi.Task):
     field = luigi.Parameter()
 
     def run(self):
+        print("Beginning StoreLabel() taskk ...")
+        print("Storing keyword filter labels in MongoDB ...")
         client = initialize_mongo()
         dump = {}
         with self.input().open("r") as in_file:
@@ -147,12 +165,15 @@ class StoreLabel(luigi.Task):
         target = MongoRangeTarget(client, self.db, self.collection, doc_ids, self.field)
         target.write(dump)
         target.exists()
-        print("{} new labels stored".format(len(doc_ids)))
+        print("StoreLabel() task complete")
+        print("{} new labels stored in MongoDB".format(len(doc_ids)))
         print("{} posts contain keywords".format(sum(value == 1 for value in dump.values())))
+        print("Clearing all out_files ...")
         os.remove("urls.txt")
         os.remove("extracted_text.txt")
         os.remove("translated_text.txt")
         os.remove("filtered_text.txt")
+        print("Out_files cleared")
                         
     def requires(self):
         return FilterText(self.db, self.collection)

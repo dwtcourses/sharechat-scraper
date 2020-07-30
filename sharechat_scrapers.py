@@ -34,104 +34,162 @@ import pickle
 from tqdm import tqdm
 
 # Trending content scraper
-def trending_content_scraper(USER_ID, PASSCODE, tag_hashes, pages):
-    start_time = time.time()
-    # Initialize S3 and Mongo DB 
-    print("Initializing ...")
-    initializationSuccess = False
-    try:
-        aws, bucket, s3 = s3_mongo_helper.initialize_s3()
-        coll = s3_mongo_helper.initialize_mongo()
-        initializationSuccess = True
-        print("Initialized successfully")
-    except Exception as e:
-        print("Initialization failure")
-        print(logging.traceback.format_exc())
-    # Scrape data from Sharechat tags
-    if initializationSuccess:
+def trending_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pages=None, mode=None, targeting=None):
+    if targeting == "bucket":
+        tag_hashes = sharechat_helper.get_tag_hashes(USER_ID, PASSCODE, bucket_ids)
+        delay = uniform(10,15)
+    elif targeting == "tag":
+        delay = uniform(30,35)
+    if mode == "archive":
+        print("Scraping in archive mode")
+        start_time = time.time()
+        # Initialize S3 and Mongo DB 
+        print("Initializing ...")
+        initializationSuccess = False
+        try:
+            aws, bucket, s3 = s3_mongo_helper.initialize_s3()
+            coll = s3_mongo_helper.initialize_mongo()
+            initializationSuccess = True
+            print("Initialized successfully")
+        except Exception as e:
+            print("Initialization failure")
+            print(logging.traceback.format_exc())
+        # Scrape data from Sharechat tags
+        if initializationSuccess:
+            print("Scraping in progress ...")
+            sharechat_df = sharechat_helper.get_trending_data(
+                                                    USER_ID,
+                                                    PASSCODE,
+                                                    tag_hashes,
+                                                    pages,
+                                                    delay)
+            
+            
+            if len(sharechat_df) < 1: 
+                raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+            else:
+                # Save data locally
+                sharechat_df.to_pickle("sharechat_df.pkl")
+                # Save data to S3 & Mongo DB
+                s3UploadSuccess = False
+                try:
+                    print("S3 upload in progress ...")
+                    sharechat_df = sharechat_helper.sharechat_s3_upload(sharechat_df, aws, bucket, s3) # the returned df includes s3 urls
+                    s3UploadSuccess = True
+                    print("Data uploaded to S3")
+                except Exception as e:
+                    print("S3 upload failed")
+                    print(logging.traceback.format_exc())
+                    pass
+                if s3UploadSuccess:
+                    try: 
+                        print("HTML preview file creation in progress ...")
+                        sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_s3(sharechat_df)
+                        with open("sharechat_trending_data_preview.html", "w") as f:
+                            f.write(sharechat_df_html.data)
+                            print("HTML preview file created")
+                    except Exception as e:
+                        print("HTML preview file creation failed")
+                        print(logging.traceback.format_exc())
+                        pass 
+                    try:
+                        print("MongoDB upload in progress ...")
+                        sharechat_helper.sharechat_mongo_upload(sharechat_df, coll)
+                        print("Data uploaded to MongoDB")            
+                    except Exception as e:
+                        print("MongoDB upload failed")
+                        print(logging.traceback.format_exc())
+                        pass  
+                else:
+                    pass   
+                try:
+                    print("CSV file creation in progress ... ")
+                    sharechat_df.to_csv("sharechat_trending_data.csv")
+                    print("CSV file created")
+                    print("{} posts scraped".format(len(sharechat_df)))
+                except Exception as e:
+                    print("CSV file creation failed")
+                    print(logging.traceback.format_exc())
+                    pass
+                print("Scraping complete")
+                print("Time taken: %s seconds" % (time.time() - start_time))
+                return sharechat_df
+    elif mode == "local":
+        print("Scraping in local mode")
+        start_time = time.time()
         print("Scraping in progress ...")
         sharechat_df = sharechat_helper.get_trending_data(
-                                                USER_ID,
-                                                PASSCODE,
-                                                tag_hashes,
-                                                pages)
-        
+                                                    USER_ID,
+                                                    PASSCODE,
+                                                    tag_hashes,
+                                                    pages,
+                                                    delay)
         if len(sharechat_df) < 1: 
             raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
         else:
-            # Save data to S3 & Mongo DB
-            s3UploadSuccess = False
-            try:
-                print("S3 upload in progress ...")
-                sharechat_df = sharechat_helper.sharechat_s3_upload(sharechat_df, aws, bucket, s3) # the returned df includes s3 urls
-                s3UploadSuccess = True
-                print("Data uploaded to S3")
-            except Exception as e:
-                print("S3 upload failed")
-                print(logging.traceback.format_exc())
-                pass
-            if s3UploadSuccess:
-                try: 
-                    print("HTML preview file creation in progress ...")
-                    sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails(sharechat_df)
-                    with open("sharechat_trending_data_preview.html", "w") as f:
-                        f.write(sharechat_df_html.data)
-                        print("HTML preview file created")
-                except Exception as e:
-                    print("HTML preview file creation failed")
-                    print(logging.traceback.format_exc())
-                    pass 
-                try:
-                    print("MongoDB upload in progress ...")
-                    sharechat_helper.sharechat_mongo_upload(sharechat_df, coll)
-                    print("Data uploaded to MongoDB")            
-                except Exception as e:
-                    print("MongoDB upload failed")
-                    print(logging.traceback.format_exc())
-                    pass  
-            else:
-                pass   
-            try:
-                print("CSV file creation in progress ... ")
-                sharechat_df.to_csv("sharechat_trending_data.csv")
-                print("CSV file created")
-                print("{} posts scraped".format(len(sharechat_df)))
-            except Exception as e:
-                print("CSV file creation failed")
-                print(logging.traceback.format_exc())
-                pass
-            print("Scraping complete")
-            print("Time taken: %s seconds" % (time.time() - start_time))
-            return sharechat_df
+            # Save data locally
+            sharechat_df.to_pickle("sharechat_df.pkl")
+        try: 
+            print("HTML preview file creation in progress ...")
+            sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_sharechat(sharechat_df)
+            with open("sharechat_trending_data_preview.html", "w") as f:
+                f.write(sharechat_df_html.data)
+                print("HTML preview file created")
+        except Exception as e:
+            print("HTML preview file creation failed")
+            print(logging.traceback.format_exc())
+            pass 
+        try:
+            print("CSV file creation in progress ... ")
+            sharechat_df.to_csv("sharechat_trending_data.csv")
+            print("CSV file created")
+            print("{} posts scraped".format(len(sharechat_df)))
+        except Exception as e:
+            print("CSV file creation failed")
+            print(logging.traceback.format_exc())
+            pass
+        print("Scraping complete")
+        print("Time taken: %s seconds" % (time.time() - start_time))
+        return sharechat_df
+
+
 
 # Fresh content scraper
-def fresh_content_scraper(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp):
-    start_time = time.time()
-    # Initialize S3 and Mongo DB 
-    print("Initializing ...")
-    initializationSuccess = False
-    try:
-        aws, bucket, s3 = s3_mongo_helper.initialize_s3()
-        coll = s3_mongo_helper.initialize_mongo()
-        initializationSuccess = True
-        print("Initialized successfully")
-    except Exception as e:
-        print("Initialization failure")
-        print(logging.traceback.format_exc())
-    # Scrape data from Sharechat tags
-    if initializationSuccess:
-        print("Scraping in progress ...")
-        sharechat_df = sharechat_helper.get_fresh_data(
-                                                USER_ID,
-                                                PASSCODE,
-                                                tag_hashes,
-                                                pages,
-                                                unix_timestamp)
-
-
+def fresh_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pages=None, unix_timestamp=None, mode=None, targeting=None):
+    if targeting == "bucket":
+        tag_hashes = sharechat_helper.get_tag_hashes(USER_ID, PASSCODE, bucket_ids)
+        delay = uniform(10,15)
+    elif targeting == "tag":
+        delay = uniform(30,35)
+    if mode == "archive":
+        print("Scraping in archive mode")
+        start_time = time.time()
+        # Initialize S3 and Mongo DB 
+        print("Initializing ...")
+        initializationSuccess = False
+        try:
+            aws, bucket, s3 = s3_mongo_helper.initialize_s3()
+            coll = s3_mongo_helper.initialize_mongo()
+            initializationSuccess = True
+            print("Initialized successfully")
+        except Exception as e:
+            print("Initialization failure")
+            print(logging.traceback.format_exc())
+        # Scrape data from Sharechat tags
+        if initializationSuccess:
+            print("Scraping in progress ...")
+            sharechat_df = sharechat_helper.get_fresh_data(
+                                                    USER_ID,
+                                                    PASSCODE,
+                                                    tag_hashes,
+                                                    pages,
+                                                    unix_timestamp,
+                                                    delay)
         if len(sharechat_df) < 1:          
             raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
         else:
+            # Save data locally
+            sharechat_df.to_pickle("sharechat_df.pkl")
             # Save data to S3 & Mongo DB
             s3UploadSuccess = False
             try:
@@ -146,7 +204,7 @@ def fresh_content_scraper(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp):
             if s3UploadSuccess:
                 try: 
                     print("HTML preview file creation in progress ...")
-                    sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails(sharechat_df)
+                    sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_s3(sharechat_df)
                     with open("sharechat_fresh_data_preview.html", "w") as f:
                         f.write(sharechat_df_html.data)
                         print("HTML preview file created")
@@ -176,78 +234,165 @@ def fresh_content_scraper(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp):
             print("Scraping complete")
             print("Time taken: %s seconds" % (time.time() - start_time))
             return sharechat_df
+    elif mode == "local":
+        print("Scraping in local mode")
+        start_time = time.time()
+        print("Scraping in progress ...")
+        sharechat_df = sharechat_helper.get_fresh_data(
+                                                    USER_ID,
+                                                    PASSCODE,
+                                                    tag_hashes,
+                                                    pages,
+                                                    unix_timestamp,
+                                                    delay)
+        if len(sharechat_df) < 1:          
+            raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+        else:
+            # Save data locally
+            sharechat_df.to_pickle("sharechat_df.pkl")
+        try: 
+            print("HTML preview file creation in progress ...")
+            sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_sharechat(sharechat_df)
+            with open("sharechat_fresh_data_preview.html", "w") as f:
+                f.write(sharechat_df_html.data)
+                print("HTML preview file created")
+        except Exception as e:
+            print("HTML preview file creation failed")
+            print(logging.traceback.format_exc())
+            pass 
+        try:
+            print("CSV file creation in progress ... ")
+            sharechat_df.to_csv("sharechat_fresh_data.csv")
+            print("CSV file created")
+            print("{} posts scraped".format(len(sharechat_df)))
+        except Exception as e:
+            print("CSV file creation failed")
+            print(logging.traceback.format_exc())
+            pass
+        print("Scraping complete")
+        print("Time taken: %s seconds" % (time.time() - start_time))
+        return sharechat_df
+
+
 
 # ML scraper (modified version of trending content scraper)
-def ml_scraper(USER_ID, PASSCODE, tag_hashes, pages):
-    start_time = time.time()
-    print("Initializing ...")
-    initializationSuccess = False
-    try:
-        coll = sharechat_helper.ml_initialize_mongo()
-        aws, bucket, s3 = sharechat_helper.ml_initialize_s3()
-        initializationSuccess = True
-        print("Initialized successfully")
-    except Exception as e:
-        print("Initialization failure")
-        print(logging.traceback.format_exc())
-    # Scrape data from tags
-    if initializationSuccess:
+def ml_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pages=None, mode=None, targeting=None):
+    if targeting == "bucket":
+        tag_hashes = sharechat_helper.get_tag_hashes(USER_ID, PASSCODE, bucket_ids)
+        delay = uniform(10,15)
+    elif targeting == "tag":
+        delay = uniform(30,35)
+    if mode == "archive":
+        print("Scraping in archive mode")
+        start_time = time.time()
+        print("Initializing ...")
+        initializationSuccess = False
+        try:
+            coll = sharechat_helper.ml_initialize_mongo()
+            aws, bucket, s3 = sharechat_helper.ml_initialize_s3()
+            initializationSuccess = True
+            print("Initialized successfully")
+        except Exception as e:
+            print("Initialization failure")
+            print(logging.traceback.format_exc())
+        # Scrape data from tags
+        if initializationSuccess:
+            print("Scraping in progress ...")
+            sharechat_df = sharechat_helper.get_trending_data(
+                                                    USER_ID,
+                                                    PASSCODE,
+                                                    tag_hashes,
+                                                    pages,
+                                                    delay)
+            if len(sharechat_df) < 1: 
+                raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+            else:
+                # Save data locally
+                sharechat_df.to_pickle("sharechat_df.pkl")
+                s3UploadSuccess = False
+                # Save data to S3 & Mongo DB
+                try:
+                    print("S3 upload in progress ... ")
+                    sharechat_df = sharechat_helper.ml_sharechat_s3_upload(sharechat_df, aws, bucket, s3) 
+                    s3UploadSuccess = True
+                    print("Data uploaded to S3")
+                except Exception as e:
+                    print("S3 upload failed")
+                    print(logging.traceback.format_exc())
+                    pass
+                if s3UploadSuccess:
+                    try: 
+                        print("HTML preview file creation in progress ...")
+                        sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_s3(sharechat_df)
+                        with open("sharechat_ml_data_preview.html", "w") as f:
+                            f.write(sharechat_df_html.data)
+                            print("HTML preview file created")
+                    except Exception as e:
+                        print("HTML preview file creation failed")
+                        print(logging.traceback.format_exc())
+                        pass 
+                    try:
+                        print("MongoDB upload in progress ...")
+                        sharechat_helper.sharechat_mongo_upload(sharechat_df, coll)
+                        print("Data uploaded to MongoDB")            
+                    except Exception as e:
+                        print("MongoDB upload failed")
+                        print(logging.traceback.format_exc())
+                        pass  
+                else:
+                    pass
+                try:
+                    print("CSV file creation in progress ... ")
+                    sharechat_df.to_csv("sharechat_ml_data.csv")
+                    print("CSV file created")
+                    print("{} posts scraped".format(len(sharechat_df)))
+                except Exception as e:
+                    print("CSV file creation failed")
+                    print(logging.traceback.format_exc())
+                    pass
+                print("Scraping complete")
+                print("Time taken: %s seconds" % (time.time() - start_time))
+                return sharechat_df
+    elif mode == "local":
+        print("Scraping in local mode")
+        start_time = time.time()
         print("Scraping in progress ...")
         sharechat_df = sharechat_helper.get_trending_data(
                                                 USER_ID,
                                                 PASSCODE,
                                                 tag_hashes,
-                                                pages)
-        # Save data to S3 
+                                                pages,
+                                                delay)
         if len(sharechat_df) < 1: 
             raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
         else:
-            s3UploadSuccess = False
-            try:
-                print("S3 upload in progress ... ")
-                sharechat_df = sharechat_helper.ml_sharechat_s3_upload(sharechat_df, aws, bucket, s3) 
-                s3UploadSuccess = True
-                print("Data uploaded to S3")
-            except Exception as e:
-                print("S3 upload failed")
-                print(logging.traceback.format_exc())
-                pass
-            if s3UploadSuccess:
-                try: 
-                    print("HTML preview file creation in progress ...")
-                    sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails(sharechat_df)
-                    with open("sharechat_ml_data_preview.html", "w") as f:
-                        f.write(sharechat_df_html.data)
-                        print("HTML preview file created")
-                except Exception as e:
-                    print("HTML preview file creation failed")
-                    print(logging.traceback.format_exc())
-                    pass 
-                try:
-                    print("MongoDB upload in progress ...")
-                    sharechat_helper.sharechat_mongo_upload(sharechat_df, coll)
-                    print("Data uploaded to MongoDB")            
-                except Exception as e:
-                    print("MongoDB upload failed")
-                    print(logging.traceback.format_exc())
-                    pass  
-            else:
-                pass
-            try:
-                print("CSV file creation in progress ... ")
-                sharechat_df.to_csv("sharechat_ml_data.csv")
-                print("CSV file created")
-                print("{} posts scraped".format(len(sharechat_df)))
-            except Exception as e:
-                print("CSV file creation failed")
-                print(logging.traceback.format_exc())
-                pass
-            print("Scraping complete")
-            print("Time taken: %s seconds" % (time.time() - start_time))
-            return sharechat_df
+            # Save data locally
+            sharechat_df.to_pickle("sharechat_df.pkl")
+        try: 
+            print("HTML preview file creation in progress ...")
+            sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_sharechat(sharechat_df)
+            with open("sharechat_ml_data_preview.html", "w") as f:
+                f.write(sharechat_df_html.data)
+                print("HTML preview file created")
+        except Exception as e:
+            print("HTML preview file creation failed")
+            print(logging.traceback.format_exc())
+            pass 
+        try:
+            print("CSV file creation in progress ... ")
+            sharechat_df.to_csv("sharechat_ml_data.csv")
+            print("CSV file created")
+            print("{} posts scraped".format(len(sharechat_df)))
+        except Exception as e:
+            print("CSV file creation failed")
+            print(logging.traceback.format_exc())
+            pass
+        print("Scraping complete")
+        print("Time taken: %s seconds" % (time.time() - start_time))
+        return sharechat_df
     
 # Virality metrics scraper
-def virality_scraper(USER_ID, PASSCODE, data_path):
+def virality_scraper(USER_ID=None, PASSCODE=None, data_path=None):
     print("Loading data ...")
     start_time = time.time()
     # Load data
@@ -265,6 +410,7 @@ def virality_scraper(USER_ID, PASSCODE, data_path):
                                          "likes_t+"+diff,
                                          "reposts_t+"+diff,
                                          "views_t+"+diff])
+    
     # Get current virality metrics for each post
     print("Scraping current virality metrics ...")
     failed = 0
@@ -281,6 +427,9 @@ def virality_scraper(USER_ID, PASSCODE, data_path):
                 failed += 1
                 pass
                 pbar.update(1)
+    
+    # Save data locally
+    result_df.to_pickle("result_df.pkl")
     # Add scraped metrics to data
     new_df = pd.concat([df.reset_index(drop=True), result_df.reset_index(drop=True)], axis = 1)
     # Save combined data

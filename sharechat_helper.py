@@ -33,6 +33,7 @@ import pymongo
 from pymongo import MongoClient
 import sys
 import codecs
+from collections import Counter
 
 # For targeted tag scraper
 
@@ -525,45 +526,59 @@ def ml_sharechat_s3_upload(df, aws, bucket, s3):
     return df # return df with s3 urls added
 
 
-def sharechat_s3_upload(df, aws, bucket, s3):
+def sharechat_s3_upload(df, aws, bucket, s3, coll):
+    df.reset_index(inplace=True)
+    duplicates = []
+    tags = []
     for index, row in df.iterrows():
-        try:
-            if (row["media_type"] == "image"):
-                    # Create S3 file name 
-                filename = row["filename"]+".jpg"
-                    # Get media
-                temp = wget.download(row["media_link"])
-                    # Upload media to S3
-                s3_mongo_helper.upload_to_s3(s3=s3, file=temp, filename=filename, bucket=bucket, content_type="image/jpeg")
-                os.remove(temp)
-            elif (row["media_type"] == "video"):
-                    # Create S3 file name
-                filename = row["filename"]+".mp4"
-                    # Get media
-                temp = wget.download(row["media_link"])
-                    # Upload media to S3
-                s3_mongo_helper.upload_to_s3(s3=s3, file=temp, filename=filename, bucket=bucket, content_type="video/mp4")
-                os.remove(temp)
-            else: # for text posts and media links
-                    # Create S3 file name
-                filename = row["filename"]+".txt"
-                    # Create text file
-                with codecs.getwriter("utf8")(open("temp.txt", "wb")) as f:
-                    f.write(row["text"])
-                # with open("temp.txt", "w+") as f:
-                #     f.write(row["text"])
-                    # Upload media to S3
-                s3_mongo_helper.upload_to_s3(s3=s3, file="temp.txt", filename=filename, bucket=bucket, content_type="application/json")
-                os.remove("temp.txt")
-        except:
-            pass
+        post_permalink = row["post_permalink"]
+        # Check if post exists in Mongo DB
+        if coll.count_documents({"post_permalink": post_permalink}) == 0:
+            try:
+                if (row["media_type"] == "image"):
+                        # Create S3 file name 
+                    filename = row["filename"]+".jpg"
+                        # Get media
+                    temp = wget.download(row["media_link"])
+                        # Upload media to S3
+                    s3_mongo_helper.upload_to_s3(s3=s3, file=temp, filename=filename, bucket=bucket, content_type="image/jpeg")
+                    os.remove(temp)
+                elif (row["media_type"] == "video"):
+                        # Create S3 file name
+                    filename = row["filename"]+".mp4"
+                        # Get media
+                    temp = wget.download(row["media_link"])
+                        # Upload media to S3
+                    s3_mongo_helper.upload_to_s3(s3=s3, file=temp, filename=filename, bucket=bucket, content_type="video/mp4")
+                    os.remove(temp)
+                else: # for text posts and media links
+                        # Create S3 file name
+                    filename = row["filename"]+".txt"
+                        # Create text file
+                    with codecs.getwriter("utf8")(open("temp.txt", "wb")) as f:
+                        f.write(row["text"])
+                    # with open("temp.txt", "w+") as f:
+                    #     f.write(row["text"])
+                        # Upload media to S3
+                    s3_mongo_helper.upload_to_s3(s3=s3, file="temp.txt", filename=filename, bucket=bucket, content_type="application/json")
+                    os.remove("temp.txt")
+            except:
+                pass
+        else:
+            duplicates.append(index)
+            tags.append(row["tag_name"])
+    # Drop duplicates after saving tagwise duplicate count
+    print(" ")
+    print("{} out of {} scraped posts already exist in database".format(len(duplicates), len(df)))
+    tagwise_duplicates = dict(zip(Counter(tags).keys(), Counter(tags).values()))
+    df.drop(duplicates, axis=0, inplace=True)
     # Add S3 urls with correct extensions
     df.reset_index(inplace = True)
     df.loc[df["media_type"] == "image", "s3_url"] = aws+bucket+"/"+df["filename"]+".jpg"
     df.loc[df["media_type"] == "video", "s3_url"] = aws+bucket+"/"+df["filename"]+".mp4"
     df.loc[df["media_type"] == "text", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
     df.loc[df["media_type"] == "link", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
-    return df # return df with s3 urls added
+    return df, tagwise_duplicates # return df with s3 urls added
 
 def ml_initialize_mongo():
     mongo_url = "mongodb+srv://"+os.environ.get("SHARECHAT_DB_USERNAME")+":"+os.environ.get("SHARECHAT_DB_PASSWORD")+"@tattle-data-fkpmg.mongodb.net/test?retryWrites=true&w=majority&ssl=true&ssl_cert_reqs=CERT_NONE"   
@@ -580,6 +595,20 @@ def ml_sharechat_mongo_upload(df, coll):
     #coll = s3_mongo_helper.initialize_mongo()
     for i in df.to_dict("records"):
         s3_mongo_helper.upload_to_mongo(data=i, coll=coll) 
+
+# S3 upload for logs
+
+def initialize_s3_logbucket():
+    aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
+    aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY_ID")
+    aws = os.environ.get("AWS_BASE_URL")
+    bucket = os.environ.get("AWS_LOGS_BUCKET") # changed bucket
+    s3 = boto3.client("s3", aws_access_key_id = aws_access_key_id,
+                          aws_secret_access_key= aws_secret_access_key) 
+    return aws, bucket, s3
+
+def upload_logs(s3, filename, key, bucket):
+    s3.upload_file(Filename = filename, Bucket = bucket, Key = "sharechat-scraper-logs/"+key) 
 
 # Old helper functions
 # Saves data locally in csv and html formats

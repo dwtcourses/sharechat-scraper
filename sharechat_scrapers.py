@@ -68,13 +68,11 @@ def trending_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucke
             if len(sharechat_df) < 1: 
                 raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
             else:
-                # Save data locally
-                sharechat_df.to_pickle("sharechat_df.pkl")
-                # Save data to S3 & Mongo DB
+                # Save data to S3 & Mongo 
                 s3UploadSuccess = False
                 try:
                     print("S3 upload in progress ...")
-                    sharechat_df = sharechat_helper.sharechat_s3_upload(sharechat_df, aws, bucket, s3) # the returned df includes s3 urls
+                    sharechat_df, tagwise_duplicates = sharechat_helper.sharechat_s3_upload(sharechat_df, aws, bucket, s3, coll) # the returned df includes s3 urls
                     s3UploadSuccess = True
                     print("Data uploaded to S3")
                 except Exception as e:
@@ -82,35 +80,55 @@ def trending_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucke
                     print(logging.traceback.format_exc())
                     pass
                 if s3UploadSuccess:
+                    aws, logbucket, s3 = sharechat_helper.initialize_s3_logbucket()
+                    today = datetime.utcnow().strftime("%Y%m%d")
                     try: 
-                        print("HTML preview file creation in progress ...")
+                        print("HTML file creation in progress ...")
                         sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_s3(sharechat_df)
                         with open("sharechat_trending_data_preview.html", "w") as f:
                             f.write(sharechat_df_html.data)
-                            print("HTML preview file created")
+                            print("HTML file created")
+                        print("Uploading HTML file to S3 ...")
+                        sharechat_helper.upload_logs(s3=s3, filename="sharechat_trending_data_preview.html", key="trending_preview_"+today, bucket=logbucket)
+                        print("HTML file uploaded")
                     except Exception as e:
-                        print("HTML preview file creation failed")
+                        print("HTML file upload failed")
                         print(logging.traceback.format_exc())
-                        pass 
+                        pass
+                    try:
+                        print("Duplicates log creation in progress ...")
+                        with open('tagwise_duplicates.json', 'w') as fp:
+                            json.dump(tagwise_duplicates, fp)
+                        print("Duplicates log created")
+                        print("Uploading duplicates log to S3 ...")
+                        sharechat_helper.upload_logs(s3=s3, filename="tagwise_duplicates.json", key="trending_duplicates_"+today, bucket=logbucket)
+                        print("Duplicates log uploaded")
+                    except Exception as e:
+                        print("Duplicates log upload failed")
+                        print(logging.traceback.format_exc())
+                        pass
+                    try:
+                        print("CSV file creation in progress ... ")
+                        sharechat_df.to_csv("sharechat_trending_data.csv")
+                        print("CSV file created")
+                        print("Uploading CSV file to S3 ...")
+                        sharechat_helper.upload_logs(s3=s3, filename="sharechat_trending_data.csv", key="trending_posts_"+today, bucket=logbucket)
+                        print("CSV file uploaded")
+                    except Exception as e:
+                        print("CSV file upload failed")
+                        print(logging.traceback.format_exc())
+                        pass  
                     try:
                         print("MongoDB upload in progress ...")
                         sharechat_helper.sharechat_mongo_upload(sharechat_df, coll)
-                        print("Data uploaded to MongoDB")            
+                        print("Data uploaded to MongoDB")
+                        print("{} posts saved".format(len(sharechat_df)))            
                     except Exception as e:
                         print("MongoDB upload failed")
                         print(logging.traceback.format_exc())
-                        pass  
+                        pass
                 else:
                     pass   
-                try:
-                    print("CSV file creation in progress ... ")
-                    sharechat_df.to_csv("sharechat_trending_data.csv")
-                    print("CSV file created")
-                    print("{} posts scraped".format(len(sharechat_df)))
-                except Exception as e:
-                    print("CSV file creation failed")
-                    print(logging.traceback.format_exc())
-                    pass
                 print("Scraping complete")
                 print("Time taken: %s seconds" % (time.time() - start_time))
                 return sharechat_df
@@ -143,7 +161,7 @@ def trending_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucke
             print("CSV file creation in progress ... ")
             sharechat_df.to_csv("sharechat_trending_data.csv")
             print("CSV file created")
-            print("{} posts scraped".format(len(sharechat_df)))
+            print("{} posts saved".format(len(sharechat_df)))
         except Exception as e:
             print("CSV file creation failed")
             print(logging.traceback.format_exc())
@@ -188,13 +206,11 @@ def fresh_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_i
         if len(sharechat_df) < 1:          
             raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
         else:
-            # Save data locally
-            sharechat_df.to_pickle("sharechat_df.pkl")
             # Save data to S3 & Mongo DB
             s3UploadSuccess = False
             try:
                 print("S3 upload in progress ...")
-                sharechat_df = sharechat_helper.sharechat_s3_upload(sharechat_df, aws, bucket, s3) # the returned df includes s3 urls
+                sharechat_df, tagwise_duplicates = sharechat_helper.sharechat_s3_upload(sharechat_df, aws, bucket, s3, coll) # the returned df includes s3 urls
                 s3UploadSuccess = True
                 print("Data uploaded to S3")
             except Exception as e:
@@ -202,35 +218,55 @@ def fresh_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_i
                 print(logging.traceback.format_exc())
                 pass
             if s3UploadSuccess:
+                aws, logbucket, s3 = sharechat_helper.initialize_s3_logbucket()
+                today = datetime.utcnow().strftime("%Y%m%d")
                 try: 
-                    print("HTML preview file creation in progress ...")
+                    print("HTML file creation in progress ...")
                     sharechat_df, sharechat_df_html = sharechat_helper.get_thumbnails_from_s3(sharechat_df)
                     with open("sharechat_fresh_data_preview.html", "w") as f:
                         f.write(sharechat_df_html.data)
-                        print("HTML preview file created")
+                        print("HTML file created")
+                    print("Uploading HTML file to S3 ...")
+                    sharechat_helper.upload_logs(s3=s3, filename="sharechat_fresh_data_preview.html", key="fresh_preview_"+today, bucket=logbucket)
+                    print("HTML file uploaded")
                 except Exception as e:
-                    print("HTML preview file creation failed")
+                    print("HTML file upload failed")
                     print(logging.traceback.format_exc())
-                    pass 
+                    pass
+                try:
+                    print("Duplicates log creation in progress ...")
+                    with open('tagwise_duplicates.json', 'w') as fp:
+                        json.dump(tagwise_duplicates, fp)
+                    print("Duplicates log created")
+                    print("Uploading duplicates log to S3 ...")
+                    sharechat_helper.upload_logs(s3=s3, filename="tagwise_duplicates.json", key="fresh_duplicates_"+today, bucket=logbucket)
+                    print("Duplicates log uploaded")
+                except Exception as e:
+                    print("Duplicates log upload failed")
+                    print(logging.traceback.format_exc())
+                    pass
+                try:
+                    print("CSV file creation in progress ... ")
+                    sharechat_df.to_csv("sharechat_fresh_data.csv")
+                    print("CSV file created")
+                    print("Uploading CSV file to S3 ...")
+                    sharechat_helper.upload_logs(s3=s3, filename="sharechat_fresh_data.csv", key="fresh_posts_"+today, bucket=logbucket)
+                    print("CSV file uploaded")
+                except Exception as e:
+                    print("CSV file upload failed")
+                    print(logging.traceback.format_exc())
+                    pass  
                 try:
                     print("MongoDB upload in progress ...")
                     sharechat_helper.sharechat_mongo_upload(sharechat_df, coll)
-                    print("Data uploaded to MongoDB")            
+                    print("Data uploaded to MongoDB")
+                    print("{} posts saved".format(len(sharechat_df)))            
                 except Exception as e:
                     print("MongoDB upload failed")
                     print(logging.traceback.format_exc())
-                    pass  
+                    pass
             else:
                 pass   
-            try:
-                print("CSV file creation in progress ... ")
-                sharechat_df.to_csv("sharechat_fresh_data.csv")
-                print("CSV file created")
-                print("{} posts scraped".format(len(sharechat_df)))
-            except Exception as e:
-                print("CSV file creation failed")
-                print(logging.traceback.format_exc())
-                pass
             print("Scraping complete")
             print("Time taken: %s seconds" % (time.time() - start_time))
             return sharechat_df
@@ -264,7 +300,7 @@ def fresh_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_i
             print("CSV file creation in progress ... ")
             sharechat_df.to_csv("sharechat_fresh_data.csv")
             print("CSV file created")
-            print("{} posts scraped".format(len(sharechat_df)))
+            print("{} posts saved".format(len(sharechat_df)))
         except Exception as e:
             print("CSV file creation failed")
             print(logging.traceback.format_exc())

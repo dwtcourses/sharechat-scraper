@@ -318,7 +318,7 @@ def get_trending_data(USER_ID, PASSCODE, tag_hashes, pages, delay):
                     print(logging.traceback.format_exc())
         else:
             pass
-    df.drop_duplicates(inplace = True)
+    df.drop_duplicates(subset=["post_permalink"], inplace = True)
     df["timestamp"] = df["timestamp"].apply(lambda x: datetime.utcfromtimestamp(int(x)))
     df["filename"] = [str(uuid.uuid4()) for x in range(len(df))]  
     df["scraped_date"] = datetime.utcnow()
@@ -363,7 +363,7 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
                     pass           
         else:
             pass
-    df.drop_duplicates(inplace = True)
+    df.drop_duplicates(subset=["post_permalink"], inplace = True)
     df["timestamp"] = df["timestamp"].apply(lambda x: datetime.utcfromtimestamp(int(x)))
     df["filename"] = [str(uuid.uuid4()) for x in range(len(df))]  
     df["scraped_date"] = datetime.utcnow()
@@ -527,7 +527,7 @@ def ml_sharechat_s3_upload(df, aws, bucket, s3):
 
 
 def sharechat_s3_upload(df, aws, bucket, s3, coll):
-    df.reset_index(inplace=True)
+    df.reset_index(drop=True, inplace=True)
     duplicates = []
     tags = []
     for index, row in df.iterrows():
@@ -573,7 +573,7 @@ def sharechat_s3_upload(df, aws, bucket, s3, coll):
     tagwise_duplicates = dict(zip(Counter(tags).keys(), Counter(tags).values()))
     df.drop(duplicates, axis=0, inplace=True)
     # Add S3 urls with correct extensions
-    df.reset_index(inplace = True)
+    df.reset_index(drop=True, inplace = True)
     df.loc[df["media_type"] == "image", "s3_url"] = aws+bucket+"/"+df["filename"]+".jpg"
     df.loc[df["media_type"] == "video", "s3_url"] = aws+bucket+"/"+df["filename"]+".mp4"
     df.loc[df["media_type"] == "text", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"

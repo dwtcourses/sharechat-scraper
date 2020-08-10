@@ -8,3 +8,4 @@ google-cloud-vision==1.0.0
 dnspython==1.16.0
 googletrans==3.0.0
 python-daemon==2.2.4
+luigi-monitor==1.1.4

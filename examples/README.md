@@ -36,8 +36,8 @@ python3 keyword_filter_pipeline.py StoreLabel
 
 ## Notes
 
-- To retry failed tasks from the task visualizer, click the 'Forgive failures' button next to the failed task after fixing the bug that caused the failure. This turns a failed task into a pending one. For this to work properly set the worker parameter ```keep_alive``` to ```True``` in [luigi.cfg] (luigi.cfg)
-- The scheduler parameters ```retry_delay``` and ```retry_count``` in [luigi.cfg] (luigi.cfg) can be used to set auto-retry preferences. Read more about configuration parameters [here] (https://luigi.readthedocs.io/en/stable/configuration.html) 
+- To retry failed tasks from the task visualizer, click the 'Forgive failures' button next to the failed task after fixing the bug that caused the failure. This turns a failed task into a pending one. For this to work properly set the worker parameter ```keep_alive``` to ```True``` in [luigi.cfg](luigi.cfg)
+- The scheduler parameters ```retry_delay``` and ```retry_count``` in [luigi.cfg](luigi.cfg) can be used to set auto-retry preferences. Read more about configuration parameters [here](https://luigi.readthedocs.io/en/stable/configuration.html) 
 - The Mongo DB fields for keyword filter labels and extracted text are hardcoded, but could also be passed as parameters along with the db and collection names. 
 - Despite their separate goals, StoreText needs to happen before StoreLabel because it requires a textfile that is deleted when the final task is completed. Deleting all the out_files ensures that the tasks can run again from the beginning.
 - The luigi monitor sends success/failure reports to Slack. Read the [documentation](https://github.com/hudl/luigi-monitor) and beware of hyphens.

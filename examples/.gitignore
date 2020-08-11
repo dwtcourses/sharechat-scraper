@@ -1,0 +1,34 @@
+# Editors
+.vscode/
+.log
+
+# Mac/OSX
+.DS_Store
+
+# Luigi 
+.pid
+luigi_pipeline_output/
+
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments
+.env
+**/__pycache__
+
+# virtualenv
+.venv/
+venv/
+ENV/
+
+# dotenv
+.env
+
+# Distribution / packaging
+env/
+.Python
+lib/
+include/
+bin/
+share/

@@ -8,6 +8,7 @@
 # Luigi 
 .pid
 luigi_pipeline_output/
+luigi/
 
 
 # Jupyter Notebook

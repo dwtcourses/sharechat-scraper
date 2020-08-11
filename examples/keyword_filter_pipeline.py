@@ -230,6 +230,6 @@ class StoreLabel(luigi.Task):
 
 
 if __name__ == "__main__": 
-    with monitor(slack_url="https://hooks.slack.com/services/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", max_print=10, username= "Luigi-Slack-Bot"):
+    with monitor(slack_url=<webhook>, max_print=10, username= "Luigi-Slack-Bot"):
         luigi.build([StoreLabel(db=os.environ.get("SHARECHAT_DB_NAME"), collection=os.environ.get("SHARECHAT_DB_COLLECTION"))]) 
 

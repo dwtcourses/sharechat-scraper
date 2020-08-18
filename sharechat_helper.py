@@ -253,11 +253,11 @@ def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_nam
     post_data["bucket_name"] = bucket_name
     post_data["bucket_id"] = int(bucket_id)
     post_data["tag_category"] = tag_category
-    post_data["tag_creation"] = tag_creation
+    post_data["tag_creation"] = int(tag_creation)
     post_data["tag_id"] = tag_id
-    post_data["tag_reports"] = tag_reports
-    post_data["tag_members"] = tag_members
-    post_data["tag_rejects"] = tag_rejects
+    post_data["tag_reports"] = int(tag_reports)
+    post_data["tag_members"] = int(tag_members)
+    post_data["tag_rejects"] = int(tag_rejects)
     return post_data
 
 
@@ -334,6 +334,7 @@ def get_trending_data(USER_ID, PASSCODE, tag_hashes, pages, delay):
     df["timestamp"] = df["timestamp"].apply(lambda x: datetime.utcfromtimestamp(int(x)))
     df["filename"] = [str(uuid.uuid4()) for x in range(len(df))]  
     df["scraped_date"] = datetime.utcnow()
+    df["scraper_type"] = "trending"
     return df
 
         
@@ -379,6 +380,7 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
     df["timestamp"] = df["timestamp"].apply(lambda x: datetime.utcfromtimestamp(int(x)))
     df["filename"] = [str(uuid.uuid4()) for x in range(len(df))]  
     df["scraped_date"] = datetime.utcnow()
+    df["scraper_type"] = "fresh"
     return df
 
 

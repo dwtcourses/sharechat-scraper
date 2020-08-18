@@ -171,8 +171,10 @@ def get_tag_data(payload_dict):
     tag_genre = payload_dict["tagGenre"]
     bucket_name = payload_dict["bucketName"]
     bucket_id = payload_dict["bucketId"]
-    tag_hash = payload_dict["tagHash"]
-    return tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_hash
+    tag_id = payload_dict["tagHash"]
+    tag_category = payload_dict["tagCategory"]
+    tag_creation = payload_dict["groupTag"]["createdOn"]
+    return tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id
 
 # Gets payload metadata that is common across content types
 def get_common_metadata(payload_key, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page):
@@ -198,7 +200,7 @@ def get_common_metadata(payload_key, timestamp, language, media_type, post_perma
 
 
 # Gets tag contents i.e. metadata for each post 
-def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_name, bucket_id):
+def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id):
     media_link = []
     timestamp = []
     language = []
@@ -247,6 +249,9 @@ def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_nam
     post_data["tag_genre"] = tag_genre
     post_data["bucket_name"] = bucket_name
     post_data["bucket_id"] = int(bucket_id)
+    post_data["tag_category"] = tag_category
+    post_data["tag_creation"] = tag_creation
+    post_data["tag_id"] = tag_id
     return post_data
 
 
@@ -273,7 +278,7 @@ def get_trending_data(USER_ID, PASSCODE, tag_hashes, pages, delay):
                                    "media_type", "tag_name", "tag_translation", 
                                  "tag_genre", "bucket_name", "bucket_id", 
                                 "external_shares", "likes", "comments", 
-                                 "reposts", "post_permalink", "caption", "text", "views", "profile_page"])
+                                 "reposts", "post_permalink", "caption", "text", "views", "profile_page", "tag_category", "tag_creation", "tag_hash"])
     content_types = ["image", "video", "text"] # add others if required
     for tag_hash in tag_hashes:
         #next_offset_hash = None
@@ -284,7 +289,7 @@ def get_trending_data(USER_ID, PASSCODE, tag_hashes, pages, delay):
             requests_dict = generate_requests_dict(USER_ID, PASSCODE, tag_hash=tag_hash, content_type=None, unix_timestamp=None, post_key=None)
             requests_dict["tag_data_request"]["api_url"] = requests_dict["tag_data_request"]["api_url"]+tag_hash+"&groupTag=true"
             tag_data_response_dict = get_response_dict(requests_dict=requests_dict, request_type="tag_data_request")
-            tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_hash = get_tag_data(tag_data_response_dict)
+            tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id = get_tag_data(tag_data_response_dict)
             tagDataScraped = True
         except Exception as e:
             print("Could not scrape data from '{}'".format(tag_hash))
@@ -300,7 +305,7 @@ def get_trending_data(USER_ID, PASSCODE, tag_hashes, pages, delay):
                     else:
                         pass
                     post_data_response_dict = get_response_dict(requests_dict=requests_dict, request_type="trending_posts_request")
-                    post_data = get_post_data(post_data_response_dict, tag_name, tag_translation, tag_genre, bucket_name, bucket_id)
+                    post_data = get_post_data(post_data_response_dict, tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id)
                     next_offset_hash = get_next_offset_hash(post_data_response_dict)
                     df = df.append(post_data, sort = True)
                     time.sleep(delay) # random time delay between requests
@@ -334,7 +339,7 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
                                    "media_type", "tag_name", "tag_translation", 
                                  "tag_genre", "bucket_name", "bucket_id", 
                                 "external_shares", "likes", "comments", 
-                                 "reposts", "post_permalink", "caption", "text", "views", "profile_page"])
+                                 "reposts", "post_permalink", "caption", "text", "views", "profile_page", "tag_category", "tag_creation", "tag_hash"])
     for tag_hash in tag_hashes:
         request_timestamp = unix_timestamp
         tagDataScraped = False
@@ -343,7 +348,7 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
             requests_dict = generate_requests_dict(USER_ID, PASSCODE, tag_hash=tag_hash, content_type=None, unix_timestamp=unix_timestamp, post_key=None)
             requests_dict["tag_data_request"]["api_url"] = requests_dict["tag_data_request"]["api_url"]+tag_hash+"&groupTag=true"
             tag_data_response_dict = get_response_dict(requests_dict=requests_dict, request_type="tag_data_request")
-            tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_hash = get_tag_data(tag_data_response_dict)
+            tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id = get_tag_data(tag_data_response_dict)
             tagDataScraped = True
         except Exception as e:
             print("Could not scrape data from '{}'".format(tag_hash))
@@ -356,7 +361,7 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
                 try:
                     requests_dict["fresh_posts_request"]["body"]["message"]["s"] = "{}".format(request_timestamp)
                     fresh_posts_response_dict = get_response_dict(requests_dict=requests_dict, request_type="fresh_posts_request")
-                    fresh_posts_data = get_post_data(fresh_posts_response_dict, tag_name, tag_translation, tag_genre, bucket_name, bucket_id)
+                    fresh_posts_data = get_post_data(fresh_posts_response_dict, tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id)
                     request_timestamp = get_next_timestamp(fresh_posts_response_dict)
                     df = df.append(fresh_posts_data, sort = True)
                     time.sleep(delay)

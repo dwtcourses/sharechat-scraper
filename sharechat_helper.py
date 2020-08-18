@@ -171,7 +171,8 @@ def get_tag_data(payload_dict):
     tag_genre = payload_dict["tagGenre"]
     bucket_name = payload_dict["bucketName"]
     bucket_id = payload_dict["bucketId"]
-    return tag_name, tag_translation, tag_genre, bucket_name, bucket_id
+    tag_hash = payload_dict["tagHash"]
+    return tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_hash
 
 # Gets payload metadata that is common across content types
 def get_common_metadata(payload_key, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page):
@@ -283,7 +284,7 @@ def get_trending_data(USER_ID, PASSCODE, tag_hashes, pages, delay):
             requests_dict = generate_requests_dict(USER_ID, PASSCODE, tag_hash=tag_hash, content_type=None, unix_timestamp=None, post_key=None)
             requests_dict["tag_data_request"]["api_url"] = requests_dict["tag_data_request"]["api_url"]+tag_hash+"&groupTag=true"
             tag_data_response_dict = get_response_dict(requests_dict=requests_dict, request_type="tag_data_request")
-            tag_name, tag_translation, tag_genre, bucket_name, bucket_id = get_tag_data(tag_data_response_dict)
+            tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_hash = get_tag_data(tag_data_response_dict)
             tagDataScraped = True
         except Exception as e:
             print("Could not scrape data from '{}'".format(tag_hash))
@@ -342,7 +343,7 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
             requests_dict = generate_requests_dict(USER_ID, PASSCODE, tag_hash=tag_hash, content_type=None, unix_timestamp=unix_timestamp, post_key=None)
             requests_dict["tag_data_request"]["api_url"] = requests_dict["tag_data_request"]["api_url"]+tag_hash+"&groupTag=true"
             tag_data_response_dict = get_response_dict(requests_dict=requests_dict, request_type="tag_data_request")
-            tag_name, tag_translation, tag_genre, bucket_name, bucket_id = get_tag_data(tag_data_response_dict)
+            tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_hash = get_tag_data(tag_data_response_dict)
             tagDataScraped = True
         except Exception as e:
             print("Could not scrape data from '{}'".format(tag_hash))

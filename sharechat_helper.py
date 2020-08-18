@@ -180,12 +180,13 @@ def get_tag_data(payload_dict):
     return tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id, tag_reports, tag_members, tag_rejects
 
 # Gets payload metadata that is common across content types
-def get_common_metadata(payload_key, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page):
+def get_common_metadata(payload_key, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified):
     timestamp.append(payload_key["o"])
     language.append(payload_key["m"])
     media_type.append(payload_key["t"])
     post_permalink.append(payload_key["permalink"])
     profile_page.append("https://sharechat.com/profile/"+payload_key["ath"]["h"])
+    verified.append(int(payload_key["ath"]["vp"]))
     if "c" in payload_key.keys():
         caption.append(payload_key["c"])
     else:
@@ -217,36 +218,37 @@ def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_nam
     text = []
     views = []
     profile_page  = []
+    verified = []
     
     for i in payload_dict["payload"]["d"]:
         if i["t"] == "image":
-            get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page)
+            get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
             media_link.append(i["g"])
             text.append(None)
         elif i["t"] == "video":
-            get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page)
+            get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
             media_link.append(i["v"])
             text.append(None)
         elif i["t"] == "text": 
             if "x" in i.keys(): # if post metadata contains the text
-                get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page)
+                get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
                 text.append(i["x"])
                 media_link.append(None)
             else:
                 pass
         elif i["t"] == "link":
             if "ld" in i.keys(): # if post metadata contains link description
-                get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page)
+                get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
                 media_link.append(i["hl"])
                 text.append(i["ld"])
             else:
                 pass
         else:
             pass 
-    post_data = pd.DataFrame(np.column_stack([media_link, timestamp, language, media_type, external_shares, likes, comments, reposts, post_permalink, caption, text, views, profile_page]), 
+    post_data = pd.DataFrame(np.column_stack([media_link, timestamp, language, media_type, external_shares, likes, comments, reposts, post_permalink, caption, text, views, profile_page, verified]), 
                                 columns = ["media_link", "timestamp", "language", "media_type", 
                                             "external_shares", "likes", "comments", 
-                                             "reposts", "post_permalink", "caption", "text", "views", "profile_page"])
+                                             "reposts", "post_permalink", "caption", "text", "views", "profile_page", "verified"])
     post_data["tag_name"] = tag_name
     post_data["tag_translation"] = tag_translation
     post_data["tag_genre"] = tag_genre

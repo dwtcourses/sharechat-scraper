@@ -32,6 +32,7 @@ import subprocess
 import logging
 import pickle
 from tqdm import tqdm
+from datetime import timedelta
 
 # Trending content scraper
 def trending_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pages=None, mode=None, targeting=None):
@@ -66,7 +67,7 @@ def trending_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucke
             
             
             if len(sharechat_df) < 1: 
-                raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+                raise ValueError("Returned empty dataframe. No posts were scraped.")
             else:
                 # Save data to S3 & Mongo 
                 s3UploadSuccess = False
@@ -143,7 +144,7 @@ def trending_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucke
                                                     pages,
                                                     delay)
         if len(sharechat_df) < 1: 
-            raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+            raise ValueError("Returned empty dataframe. No posts were scraped.")
         else:
             # Save data locally
             sharechat_df.to_pickle("sharechat_df.pkl")
@@ -204,7 +205,7 @@ def fresh_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_i
                                                     unix_timestamp,
                                                     delay)
         if len(sharechat_df) < 1:          
-            raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+            raise ValueError("Returned empty dataframe. No posts were scraped.")
         else:
             # Save data to S3 & Mongo DB
             s3UploadSuccess = False
@@ -282,7 +283,7 @@ def fresh_content_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_i
                                                     unix_timestamp,
                                                     delay)
         if len(sharechat_df) < 1:          
-            raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+            raise ValueError("Returned empty dataframe. No posts were scraped.")
         else:
             # Save data locally
             sharechat_df.to_pickle("sharechat_df.pkl")
@@ -341,7 +342,7 @@ def ml_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pa
                                                     pages,
                                                     delay)
             if len(sharechat_df) < 1: 
-                raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+                raise ValueError("Returned empty dataframe. No posts were scraped.")
             else:
                 # Save data locally
                 sharechat_df.to_pickle("sharechat_df.pkl")
@@ -400,7 +401,7 @@ def ml_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pa
                                                 pages,
                                                 delay)
         if len(sharechat_df) < 1: 
-            raise ValueError("get_data() returned empty dataframe. No posts were scraped.")
+            raise ValueError("Returned empty dataframe. No posts were scraped.")
         else:
             # Save data locally
             sharechat_df.to_pickle("sharechat_df.pkl")
@@ -428,54 +429,57 @@ def ml_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pa
         return sharechat_df
     
 # Virality metrics scraper
-def virality_scraper(USER_ID=None, PASSCODE=None, data_path=None):
-    print("Loading data ...")
+def virality_scraper(USER_ID=None, PASSCODE=None):
+
     start_time = time.time()
-    # Load data
-    df = pd.read_csv(data_path)
-    df.reset_index(drop=True, inplace=True)
-    today = str(date.today())
-    # Get timestamp for day t
-    df["timestamp"] = pd.to_datetime(df["timestamp"])
-    timestamp = df["timestamp"][0]
-    # Calculate days since t
-    diff = str((pd.Timestamp("today")-timestamp).days)
-    # Initialize df to hold current metrics
-    result_df = pd.DataFrame(columns = ["comments_t+"+diff,
-                                         "external_shares_t+"+diff,
-                                         "likes_t+"+diff,
-                                         "reposts_t+"+diff,
-                                         "views_t+"+diff])
-    
-    # Get current virality metrics for each post
-    print("Scraping current virality metrics ...")
-    failed = 0
-    with tqdm(total=len(df)) as pbar:
-        for i in df["post_permalink"]:
+    # Initialize S3 and Mongo DB 
+    print("Initializing Mongo DB ...")
+    initializationSuccess = False
+    try:
+        coll = s3_mongo_helper.initialize_mongo()
+        initializationSuccess = True
+        print("Initialized successfully")
+    except Exception as e:
+        print("Initialization failure")
+        print(logging.traceback.format_exc())
+
+    if initializationSuccess:
+        print("# Getting current virality metrics for last 5 fresh batches ...")
+        updates=0
+        failed=0
+        end = datetime.utcnow() 
+        start = end - timedelta(days=2)
+        #for doc in in coll.find({"scraped_date": {"$gte": start, "$lt": end}, "scraper_type": "fresh"}):
+        for doc in coll.find({"scraped_date": {"$gte": start, "$lt": end}}):
             try:
-                result = sharechat_helper.get_current_metrics(USER_ID, PASSCODE, i)
-                result_df = result_df.append(pd.DataFrame(result, 
-                                                    columns = result_df.columns, 
-                                                    ), sort = True)
-                pbar.update(1)
-            except Exception:
-                result_df = result_df.append(pd.Series(), ignore_index=True)
-                failed += 1
+                # Get timestamp for day t
+                timestamp = pd.to_datetime(doc["timestamp"])
+                # Calculate days since t
+                diff = str((end-timestamp).days)
+                # Get current virality metrics
+                result = sharechat_helper.get_current_metrics(USER_ID, PASSCODE, doc["post_permalink"])
+                # Update doc
+                coll.update({"_id": doc["_id"]},
+                            {"$set": {
+                                "comments_t+"+diff: result[0],
+                                "external_shares_t+"+diff: result[1],
+                                "likes_t+"+diff: result[2],
+                                "reposts_t+"+diff: result[3],
+                                "views_t+"+diff: result[4]
+                                }
+                            }
+                        )
+                updates+=1
+            except Exception as e:
+                print(logging.traceback.format_exc())
+                failed+=1
                 pass
-                pbar.update(1)
-    
-    # Save data locally
-    result_df.to_pickle("result_df.pkl")
-    # Add scraped metrics to data
-    new_df = pd.concat([df.reset_index(drop=True), result_df.reset_index(drop=True)], axis = 1)
-    # Save combined data
-    "Saving scraped metrics ..."
-    sharechat_helper.save_updated_df(new_df, today)
-    total = len(df)
-    print("Scraping complete")
-    print("Updated virality metrics for {} out of {} posts".format(total-failed, total))
-    print("Time taken: %s seconds" % (time.time() - start_time))
-    return new_df
+
+        print("Scraping complete")
+        print("Updated virality metrics for {} posts".format(updates))
+        print("{} updates failed".format(failed))
+        print("Time taken: %s seconds" % (time.time() - start_time))
+
 
     
     

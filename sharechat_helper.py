@@ -166,31 +166,31 @@ def get_response_dict(requests_dict, request_type):
     return response_dict
 
 def get_tag_data(payload_dict):
-    tag_name = payload_dict["tagName"]
-    tag_translation = payload_dict["englishMeaning"]
-    tag_genre = payload_dict["tagGenre"]
-    bucket_name = payload_dict["bucketName"]
-    bucket_id = payload_dict["bucketId"]
-    tag_id = payload_dict["tagHash"]
-    tag_category = payload_dict["tagCategory"]
-    tag_creation = payload_dict["groupTag"]["createdOn"]
-    tag_reports = payload_dict["groupTag"]["reportCount"]
-    tag_members = payload_dict["groupTag"]["totalMemberCount"]
-    tag_rejects = payload_dict["groupTag"]["rejectedPostCount"]
+    tag_name = payload_dict.get("tagName")
+    tag_translation = payload_dict.get("englishMeaning")
+    tag_genre = payload_dict.get("tagGenre")
+    bucket_name = payload_dict.get("bucketName")
+    bucket_id = payload_dict.get("bucketId")
+    tag_id = payload_dict.get("tagHash")
+    tag_category = payload_dict.get("tagCategory")
+    tag_creation = payload_dict.get("groupTag").get("createdOn")
+    tag_reports = payload_dict.get("groupTag").get("reportCount")
+    tag_members = payload_dict.get("groupTag").get("totalMemberCount")
+    tag_rejects = payload_dict.get("groupTag").get("rejectedPostCount")
     return tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id, tag_reports, tag_members, tag_rejects
 
 # Gets payload metadata that is common across content types
 def get_common_metadata(payload_key, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified):
-    timestamp.append(payload_key["o"])
-    language.append(payload_key["m"])
-    media_type.append(payload_key["t"])
-    post_permalink.append(payload_key["permalink"])
-    profile_page.append("https://sharechat.com/profile/"+payload_key["ath"]["h"])
-    verified.append(int(payload_key["ath"]["vp"]))
-    if "c" in payload_key.keys():
-        caption.append(payload_key["c"])
-    else:
-        caption.append(None)
+    timestamp.append(payload_key.get("o"))
+    language.append(payload_key.get("m"))
+    media_type.append(payload_key.get("t"))
+    post_permalink.append(payload_key.get("permalink"))
+    profile_page.append("https://sharechat.com/profile/"+payload_key.get("ath").get("h"))
+    verified.append(int(payload_key.get("ath").get("vp")))
+    #if "c" in payload_key.keys():
+    caption.append(payload_key.get("c"))
+    # else:
+    #     caption.append(None)
     virality_metrics = {"usc": external_shares,
                        "lc": likes,
                        "c2": comments,
@@ -198,7 +198,7 @@ def get_common_metadata(payload_key, timestamp, language, media_type, post_perma
                        "l": views}
     for metric in virality_metrics:
         if metric in payload_key.keys():
-            virality_metrics[metric].append(payload_key[metric])
+            virality_metrics[metric].append(payload_key.get(metric))
         else:
             virality_metrics[metric].append(0)
 
@@ -220,31 +220,32 @@ def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_nam
     profile_page  = []
     verified = []
     
-    for i in payload_dict["payload"]["d"]:
-        if i["t"] == "image":
+    for i in payload_dict.get("payload").get("d"):
+        if i.get("t") == "image":
             get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
-            media_link.append(i["g"])
+            media_link.append(i.get("g"))
             text.append(None)
-        elif i["t"] == "video":
+        elif i.get("t") == "video":
             get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
-            media_link.append(i["v"])
+            media_link.append(i.get("v"))
             text.append(None)
-        elif i["t"] == "text": 
+        elif i.get("t") == "text": 
             if "x" in i.keys(): # if post metadata contains the text
                 get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
-                text.append(i["x"])
+                text.append(i.get("x"))
                 media_link.append(None)
             else:
                 pass
-        elif i["t"] == "link":
+        elif i.get("t") == "link":
             if "ld" in i.keys(): # if post metadata contains link description
                 get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
-                media_link.append(i["hl"])
-                text.append(i["ld"])
+                media_link.append(i.get("hl"))
+                text.append(i.get("ld"))
             else:
                 pass
         else:
             pass 
+    
     post_data = pd.DataFrame(np.column_stack([media_link, timestamp, language, media_type, external_shares, likes, comments, reposts, post_permalink, caption, text, views, profile_page, verified]), 
                                 columns = ["media_link", "timestamp", "language", "media_type", 
                                             "external_shares", "likes", "comments", 
@@ -253,13 +254,13 @@ def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_nam
     post_data["tag_translation"] = tag_translation
     post_data["tag_genre"] = tag_genre
     post_data["bucket_name"] = bucket_name
-    post_data["bucket_id"] = int(bucket_id)
+    post_data["bucket_id"] = bucket_id
     post_data["tag_category"] = tag_category
-    post_data["tag_creation"] = int(tag_creation)
+    post_data["tag_creation"] = tag_creation
     post_data["tag_id"] = tag_id
-    post_data["tag_reports"] = int(tag_reports)
-    post_data["tag_members"] = int(tag_members)
-    post_data["tag_rejects"] = int(tag_rejects)
+    post_data["tag_reports"] = tag_reports
+    post_data["tag_members"] = tag_members
+    post_data["tag_rejects"] = tag_rejects
     return post_data
 
 
@@ -273,10 +274,11 @@ def get_next_offset_hash(payload_dict):
 
 # Gets next timestamp for scraping the next page
 def get_next_timestamp(payload_dict):
-    if "n" in payload_dict["payload"]:
-        next_timestamp = payload_dict["payload"]["n"]
-    else:
-        next_timestamp=None
+    next_timestamp = payload_dict.get("payload").get("n")
+    # if "n" in payload_dict["payload"]:
+    #     next_timestamp = payload_dict["payload"]["n"]
+    # else:
+    #     next_timestamp=None
     return next_timestamp
 
 # Gets trending tag data
@@ -360,6 +362,7 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
             tag_name, tag_translation, tag_genre, bucket_name, bucket_id, tag_category, tag_creation, tag_id, tag_reports, tag_members, tag_rejects = get_tag_data(tag_data_response_dict)
             tagDataScraped = True
         except Exception as e:
+            print(logging.traceback.format_exc())
             print("Could not scrape data from '{}'".format(tag_hash))
             print("Continuing ...")
             pass 
@@ -384,9 +387,6 @@ def get_fresh_data(USER_ID, PASSCODE, tag_hashes, pages, unix_timestamp, delay):
     df["scraped_date"] = datetime.utcnow()
     df["scraper_type"] = "fresh"
     return df
-
-
-        
 
 
 
@@ -464,13 +464,13 @@ def scrape_metrics(response_dict):
                        "lc": "likes",
                        "repostCount": "reposts",
                        "l": "views"}
-    values = [[]]
+    values= []
     for key in virality_metrics:
-        if key in response_dict["payload"]["d"].keys():
-            res = int(response_dict["payload"]["d"][key])
-            values[0].append(res)
+        if key in response_dict.get("payload").get("d").keys():
+            res = int(response_dict.get("payload").get("d")[key])
+            values.append(res)
         else:
-            values[0].append(0)
+            values.append(0)
     return values
 
 def get_current_metrics(USER_ID, PASSCODE, post_permalink):
@@ -480,7 +480,7 @@ def get_current_metrics(USER_ID, PASSCODE, post_permalink):
     virality_metrics_response_dict = get_response_dict(requests_dict=requests_dict, request_type="virality_metrics_request")
     # Scrape current metrics for post 
     result = scrape_metrics(virality_metrics_response_dict)
-    time.sleep(uniform(30,35))
+    time.sleep(uniform(3,5))
     return result
  
 

@@ -9,13 +9,13 @@ scraper_params = {
     "PASSCODE": os.environ.get("SHARECHAT_PASSWORD"), 
     "tag_hashes": ["", ""], # insert tag hashes as strings
     "bucket_ids":["", ""],
-    "content_to_scrape": "", # select one from: trending / fresh / virality / ml
-"pages": 1, # used when content_to_scrape == trending / fresh / ml
-    "unix_timestamp": "", # 10 digit unix timestamp. used when content_to_scrape == fresh
-    "data_path": "", # path to existing Sharechat data csv. used when content_to_scrape == virality
-    "mode": "", # select from: local / archive
-    "targeting": "", # select from: tag / bucket
-    "is_cron_job": 
+    "content_to_scrape": "virality", # select one from: trending / fresh / virality / ml
+    "pages": 1, # used when content_to_scrape == trending / fresh / ml
+    "unix_timestamp": "", # 10 digit unix timestamp. used when content_to_scrape == fresh and is_cron_job == False
+    "virality_job": 1, # select from 1 or 2. used when content_to_scrape == virality
+    "mode": "local", # select from: local / archive
+    "targeting": "tag", # select from: tag / bucket
+    "is_cron_job": True
     }
 
 

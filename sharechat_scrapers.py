@@ -429,7 +429,7 @@ def ml_scraper(USER_ID=None, PASSCODE=None, tag_hashes=None, bucket_ids=None, pa
         return sharechat_df
     
 # Virality metrics scraper
-def virality_scraper(USER_ID=None, PASSCODE=None):
+def virality_scraper(USER_ID=None, PASSCODE=None, virality_job=None):
 
     start_time = time.time()
     # Initialize S3 and Mongo DB 
@@ -444,17 +444,29 @@ def virality_scraper(USER_ID=None, PASSCODE=None):
         print(logging.traceback.format_exc())
 
     if initializationSuccess:
-        print("# Getting current virality metrics for last 5 fresh batches ...")
         updates=0
         failed=0
-        end = datetime.utcnow() 
-        start = end - timedelta(days=2)
-        for doc in in coll.find({"scraped_date": {"$gte": start, "$lt": end}, "scraper_type": "fresh"}):
+        today = datetime.utcnow() 
+
+        if virality_job == 1:     
+            # Get metrics for t+1 & t+2
+            start = today - timedelta(days=2)
+            end = today - timedelta(days=1)
+            print("# Updating virality metrics for posts 1 & 2 day old posts ...")
+        
+        elif virality_job == 2:     
+            # Get metrics for t+3 ... t+5
+            start = today - timedelta(days=5)
+            end = today - timedelta(days=3)
+            print("# Updating virality metrics for 3, 4 & 5 day old posts ...")
+        
+        cursor = coll.find({"scraped_date": {"$gte": start, "$lte": end}, "scraper_type": "fresh"})
+        for doc in cursor:
             try:
                 # Get timestamp for day t
                 timestamp = pd.to_datetime(doc["timestamp"])
                 # Calculate days since t
-                diff = str((end-timestamp).days)
+                diff = str((today-timestamp).days)
                 # Get current virality metrics
                 result = sharechat_helper.get_current_metrics(USER_ID, PASSCODE, doc["post_permalink"])
                 # Update doc
@@ -469,8 +481,12 @@ def virality_scraper(USER_ID=None, PASSCODE=None):
                             }
                         )
                 updates+=1
+
+                # For debugging
+                # print(coll.find_one({"_id": doc["_id"]}))
+                # print("")
+
             except Exception as e:
-                print(logging.traceback.format_exc())
                 failed+=1
                 pass
 

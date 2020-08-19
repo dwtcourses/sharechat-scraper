@@ -449,8 +449,7 @@ def virality_scraper(USER_ID=None, PASSCODE=None):
         failed=0
         end = datetime.utcnow() 
         start = end - timedelta(days=2)
-        #for doc in in coll.find({"scraped_date": {"$gte": start, "$lt": end}, "scraper_type": "fresh"}):
-        for doc in coll.find({"scraped_date": {"$gte": start, "$lt": end}}):
+        for doc in in coll.find({"scraped_date": {"$gte": start, "$lt": end}, "scraper_type": "fresh"}):
             try:
                 # Get timestamp for day t
                 timestamp = pd.to_datetime(doc["timestamp"])

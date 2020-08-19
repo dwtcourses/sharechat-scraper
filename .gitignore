@@ -40,5 +40,27 @@ instance/
 lib/
 include/
 bin/
-
 share/
+
+# DB backups
+backup/
+
+# Luigi
+luigi-pipeline/.pid
+luigi-pipeline/luigi_pipeline_output/
+luigi-pipeline/luigi/
+luigi-pipeline/.cfg
+luigi-pipeline/.venv/
+luigi-pipeline/venv/
+luigi-pipeline/ENV/
+luigi-pipeline/.env
+luigi-pipeline/.ipynb_checkpoints
+luigi-pipeline/env/
+luigi-pipeline/.Python
+luigi-pipeline/lib/
+luigi-pipeline/include/
+luigi-pipeline/bin/
+luigi-pipeline/share/
+luigi-pipeline/.vscode/
+luigi-pipeline/.log
+luigi-pipeline/.DS_Store

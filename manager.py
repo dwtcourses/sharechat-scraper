@@ -60,8 +60,7 @@ def scraper_manager(scraper_params):
                                             )
         elif scraper_params["content_to_scrape"] == "virality":
             virality_scraper(USER_ID=scraper_params["USER_ID"], 
-                            PASSCODE=scraper_params["PASSCODE"], 
-                            data_path=scraper_params["data_path"])
+                            PASSCODE=scraper_params["PASSCODE"])
         elif scraper_params["content_to_scrape"] == "ml":
             ml_scraper(USER_ID=scraper_params["USER_ID"],
                        PASSCODE=scraper_params["PASSCODE"],

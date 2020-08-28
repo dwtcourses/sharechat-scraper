@@ -459,7 +459,7 @@ def virality_scraper(USER_ID=None, PASSCODE=None, virality_job=None):
             start = today - timedelta(days=5)
             end = today - timedelta(days=3)
             print("# Updating virality metrics for 3, 4 & 5 day old posts ...")
-        
+
         cursor = coll.find({"scraped_date": {"$gte": start, "$lte": end}, "scraper_type": "fresh"})
         for doc in cursor:
             try:
@@ -467,24 +467,30 @@ def virality_scraper(USER_ID=None, PASSCODE=None, virality_job=None):
                 timestamp = pd.to_datetime(doc["timestamp"])
                 # Calculate days since t
                 diff = str((today-timestamp).days)
-                # Get current virality metrics
-                result = sharechat_helper.get_current_metrics(USER_ID, PASSCODE, doc["post_permalink"])
-                # Update doc
-                coll.update({"_id": doc["_id"]},
-                            {"$set": {
-                                "comments_t+"+diff: result[0],
-                                "external_shares_t+"+diff: result[1],
-                                "likes_t+"+diff: result[2],
-                                "reposts_t+"+diff: result[3],
-                                "views_t+"+diff: result[4]
+                # If the post is actually less than 5 days old
+                if int(diff) <= 5: 
+                    # Get current virality metrics
+                    result = sharechat_helper.get_current_metrics(USER_ID, PASSCODE, doc["post_permalink"])
+                    # Update doc
+                    coll.update({"_id": doc["_id"]},
+                                {"$set": {
+                                    "comments_t+"+diff: result[0],
+                                    "external_shares_t+"+diff: result[1],
+                                    "likes_t+"+diff: result[2],
+                                    "reposts_t+"+diff: result[3],
+                                    "views_t+"+diff: result[4]
+                                    }
                                 }
-                            }
-                        )
-                updates+=1
+                            )
+                    updates+=1
 
-                # For debugging
-                # print(coll.find_one({"_id": doc["_id"]}))
-                # print("")
+                    # For debugging
+                    # print(coll.find_one({"_id": doc["_id"]}))
+                    # print("")
+
+                else:
+                    # If for some reason the post is older
+                    pass
 
             except Exception as e:
                 failed+=1

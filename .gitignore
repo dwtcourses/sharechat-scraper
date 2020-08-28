@@ -45,4 +45,5 @@ share/
 # DB backups
 backup/
 
-
+# PyCharm
+.idea/

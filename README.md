@@ -8,6 +8,12 @@ This repository contains code for scraping publicly available data from targeted
 
 One of Tattle's key goals is to create new knowledge around misinformation/disinformation on social media in India. To this end, we're creating an open archive of relevant multilingual content circulated on chat apps and social networks such as Sharechat. Read more about our goals and values here - https://tattle.co.in/faq
 
+# Scraping methodology
+
+In July 2020 we deployed the Sharechat scraper as daily cron jobs. The scrapers target the following content buckets on Sharechat:
+
+![Cron Job Targeting](targeting.png)
+
 # Running locally
 
 1. Create an account on Sharechat
@@ -41,7 +47,7 @@ If you can't set up a MongoDB or S3 bucket, set the "mode" to "local" in the Con
 
 [Sharechat ML scraper](docs/sharechat_ml_scraper.md) 
 
-[Sharechat virality scraper](docs/sharechat_virality_scraper.md) (development stage)
+[Sharechat virality scraper](docs/sharechat_virality_scraper.md) 
 
 **Usage**: Enter values in the scraper_params dictionary as per the scraping requirement, then run the file.
 

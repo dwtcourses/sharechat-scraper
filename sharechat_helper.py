@@ -222,7 +222,6 @@ def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_nam
     
     for i in payload_dict.get("payload").get("d"):
         if "repostId" in i:
-            print(i)
             i["t"] = "repost"
             if "x" in i.keys():  # if post metadata contains the text
                 get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes,

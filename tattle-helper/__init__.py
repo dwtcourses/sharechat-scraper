@@ -1,4 +1,5 @@
-def hi(): 
-    print('hi')
+def hi():
+    print("hi")
 
-print('hello')
+
+print("hello")

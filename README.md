@@ -19,9 +19,10 @@ In July 2020 we deployed the Sharechat scraper as daily cron jobs. The scrapers 
 1. Create an account on Sharechat
 2. Fork the repository 
 3. Install required Python packages: `pip install requirements.txt`
-4. Set up an AWS S3 bucket to store the scraped content (images, videos, text) and a MongoDB to store the scraped metadata (timestamps, likes, shares etc.)\
+4. Generate pre-commit hooks: `pre-commit install`
+5. Set up an AWS S3 bucket to store the scraped content (images, videos, text) and a MongoDB to store the scraped metadata (timestamps, likes, shares etc.)\
 If you can't set up a MongoDB or S3 bucket, set the "mode" to "local" in the Config file (see no. 6)
-5. Create a .env file in the same folder and save your Sharechat, MongoDB and S3 access credentials in the .env file. These should be in the following format:
+6. Create a .env file in the same folder and save your Sharechat, MongoDB and S3 access credentials in the .env file. These should be in the following format:
 
    ```
    SHARECHAT_DB_USERNAME = <YOUR_MONGODB_USERNAME>
@@ -35,7 +36,7 @@ If you can't set up a MongoDB or S3 bucket, set the "mode" to "local" in the Con
    SHARECHAT_USER_ID = <YOUR_SHARECHAT_USER_ID>
    SHARECHAT_PASSWORD = <YOUR_SHARECHAT_PASSWORD>
    ```
-6. Modify the Config file as per your requirements, then run it to start scraping: `python run config.py`
+7. Modify the Config file as per your requirements, then run it to start scraping: `python run config.py`
 
 ## Modifying the Config file
 

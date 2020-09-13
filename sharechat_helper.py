@@ -223,16 +223,16 @@ def get_post_data(payload_dict, tag_name, tag_translation, tag_genre, bucket_nam
     for i in payload_dict.get("payload").get("d"):
         if "repostId" in i:
             i["t"] = "repost"
-            if "x" in i.keys():  # if post metadata contains the text
-                get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes,
-                                    comments, reposts, views, profile_page, verified)
-                if "repostData" in i:
-                    shared_post_url = "https://sharechat.com/post/" + i.get("repostData").get("ph")
-                    text.append(i.get("x") + "<Repost:" + shared_post_url + ">")
-                text.append(i.get("x") + "<Repost>")
-                media_link.append(None)
-            else:
-                pass
+            x = ""
+            if "x" in i:
+                x = i.get("x")
+            get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes,
+                                comments, reposts, views, profile_page, verified)
+            shared_post_url = ""
+            if "repostData" in i:
+                shared_post_url = "https://sharechat.com/post/" + i.get("repostData").get("ph")
+            text.append({"text": x, "shared_post": shared_post_url})
+            media_link.append(None)
         elif i.get("t") == "image":
             get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
             media_link.append(i.get("g"))

@@ -20,6 +20,9 @@ working_files/
 *.csv
 *.html
 
+# Temporary lock files
+*.~lock*
+
 # virtualenv
 .venv/
 venv/

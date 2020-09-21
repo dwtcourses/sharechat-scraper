@@ -567,6 +567,11 @@ def sharechat_s3_upload(df, aws, bucket, s3, coll):
                         # Upload media to S3
                     s3_mongo_helper.upload_to_s3(s3=s3, file=temp, filename=filename, bucket=bucket, content_type="video/mp4")
                     os.remove(temp)
+                elif (row["media_type"] == "repost"):
+                    with codecs.getwriter("utf8")(open("temp.txt", "wb")) as f:
+                        f.write(str(row["text"]))
+                    s3_mongo_helper.upload_to_s3(s3=s3, file="temp.txt", filename=filename, bucket=bucket, content_type="application/json")
+                    os.remove("temp.txt")
                 else: # for text posts and media links
                         # Create S3 file name
                     filename = row["filename"]+".txt"
@@ -594,6 +599,7 @@ def sharechat_s3_upload(df, aws, bucket, s3, coll):
     df.loc[df["media_type"] == "video", "s3_url"] = aws+bucket+"/"+df["filename"]+".mp4"
     df.loc[df["media_type"] == "text", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
     df.loc[df["media_type"] == "link", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
+    df.loc[df["media_type"] == "repost", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
     return df, tagwise_duplicates # return df with s3 urls added
 
 def ml_initialize_mongo():

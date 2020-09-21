@@ -580,6 +580,7 @@ def sharechat_s3_upload(df, aws, bucket, s3, coll):
                     s3_mongo_helper.upload_to_s3(s3=s3, file=temp, filename=filename, bucket=bucket, content_type="video/mp4")
                     os.remove(temp)
                 elif (row["media_type"] == "repost"):
+                    filename = row["filename"]+".txt"
                     with codecs.getwriter("utf8")(open("temp.txt", "wb")) as f:
                         f.write(str(row["text"]))
                     s3_mongo_helper.upload_to_s3(s3=s3, file="temp.txt", filename=filename, bucket=bucket, content_type="application/json")

@@ -47,3 +47,5 @@ backup/
 
 # PyCharm
 .idea/
+
+.docker/

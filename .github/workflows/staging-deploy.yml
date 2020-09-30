@@ -6,8 +6,26 @@ on:
       - development
 
 jobs:
-  build:
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      indexer: ${{ steps.filter.outputs.indexer }}
+      reporter: ${{ steps.filter.outputs.reporter }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: development
+      - uses: dorny/paths-filter@v2.2.0
+        id: filter
+        with:
+          filters: |
+            indexer:
+              - 'workers/indexer/**/*'
+            reporter:
+              - 'workers/reporter/**/*'
+  server:
+    runs-on: ubuntu-latest
+    needs: changes
     steps:
       - uses: actions/checkout@v2
         with:
@@ -36,11 +54,54 @@ jobs:
           name: tattletech/sharechat-scraper
           tags: "cron-latest"
 
-      - name: Deploy to k8s
-        uses: appleboy/ssh-action@master
+      # - name: Deploy to k8s
+      # uses: appleboy/ssh-action@master
+      # with:
+      # host: ${{ secrets.K8S_HOST_DEV }}
+      # username: ${{ secrets.K8S_USERNAME }}
+      # key: ${{ secrets.K8S_KEY }}
+      # script: |
+      # ./autodeploy_scs_rest.sh ${{ steps.vars.outputs.sha_short }} >> ~/deploy.log 2>&1
+  indexer:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.indexer == 'true' }}
+    steps:
+      - uses: actions/checkout@v2
         with:
-          host: ${{ secrets.K8S_HOST_DEV }}
-          username: ${{ secrets.K8S_USERNAME }}
-          key: ${{ secrets.K8S_KEY }}
-          script: |
-            ./autodeploy_scs_rest.sh ${{ steps.vars.outputs.sha_short }} >> ~/deploy.log 2>&1
+          ref: development
+      - name: Declare some variables
+        id: vars
+        shell: bash
+        run: |
+          echo "setting variables"
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+      - uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          username: tattletech
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          name: tattletech/sharechat-indexer
+          tags: ${{ steps.vars.outputs.sha_short }}
+          workdir: workers/indexer/
+  reporter:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.reporter == 'true' }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: development
+      - name: Declare some variables
+        id: vars
+        shell: bash
+        run: |
+          echo "setting variables"
+          echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+      - uses: elgohr/Publish-Docker-Github-Action@master
+        with:
+          username: tattletech
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          name: tattletech/sharechat-reporter
+          tags: ${{ steps.vars.outputs.sha_short }}
+          workdir: workers/reporter/

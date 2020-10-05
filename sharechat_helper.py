@@ -292,22 +292,21 @@ def get_post_data(
     verified = []
 
     for i in payload_dict.get("payload").get("d"):
-        if i.get("t") == "image":
-            get_common_metadata(
-                i,
-                timestamp,
-                language,
-                media_type,
-                post_permalink,
-                caption,
-                external_shares,
-                likes,
-                comments,
-                reposts,
-                views,
-                profile_page,
-                verified,
-            )
+
+        if "repostId" in i:
+            i["t"] = "repost"
+            x = ""
+            if "x" in i:
+                x = i.get("x")
+            get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes,
+                                comments, reposts, views, profile_page, verified)
+            shared_post_url = ""
+            if "repostData" in i:
+                shared_post_url = "https://sharechat.com/post/" + i.get("repostData").get("ph")
+            text.append({"text": x, "shared_post": shared_post_url})
+            media_link.append(None)
+        elif i.get("t") == "image":
+            get_common_metadata(i, timestamp, language, media_type, post_permalink, caption, external_shares, likes, comments, reposts, views, profile_page, verified)
             media_link.append(i.get("g"))
             text.append(None)
         elif i.get("t") == "video":
@@ -988,10 +987,18 @@ def sharechat_s3_upload(df, aws, bucket, s3, coll):
                         content_type="video/mp4",
                     )
                     os.remove(temp)
-                else:  # for text posts and media links
-                    # Create S3 file name
-                    filename = row["filename"] + ".txt"
-                    # Create text file
+
+                elif (row["media_type"] == "repost"):
+                    filename = row["filename"]+".txt"
+                    with codecs.getwriter("utf8")(open("temp.txt", "wb")) as f:
+                        f.write(str(row["text"]))
+                    s3_mongo_helper.upload_to_s3(s3=s3, file="temp.txt", filename=filename, bucket=bucket, content_type="application/json")
+                    os.remove("temp.txt")
+                else: # for text posts and media links
+                        # Create S3 file name
+                    filename = row["filename"]+".txt"
+                        # Create text file
+                      
                     with codecs.getwriter("utf8")(open("temp.txt", "wb")) as f:
                         f.write(row["text"])
                     # with open("temp.txt", "w+") as f:
@@ -1020,21 +1027,14 @@ def sharechat_s3_upload(df, aws, bucket, s3, coll):
     tagwise_duplicates = dict(zip(Counter(tags).keys(), Counter(tags).values()))
     df.drop(duplicates, axis=0, inplace=True)
     # Add S3 urls with correct extensions
-    df.reset_index(drop=True, inplace=True)
-    df.loc[df["media_type"] == "image", "s3_url"] = (
-        aws + bucket + "/" + df["filename"] + ".jpg"
-    )
-    df.loc[df["media_type"] == "video", "s3_url"] = (
-        aws + bucket + "/" + df["filename"] + ".mp4"
-    )
-    df.loc[df["media_type"] == "text", "s3_url"] = (
-        aws + bucket + "/" + df["filename"] + ".txt"
-    )
-    df.loc[df["media_type"] == "link", "s3_url"] = (
-        aws + bucket + "/" + df["filename"] + ".txt"
-    )
-    return df, tagwise_duplicates  # return df with s3 urls added
 
+    df.reset_index(drop=True, inplace = True)
+    df.loc[df["media_type"] == "image", "s3_url"] = aws+bucket+"/"+df["filename"]+".jpg"
+    df.loc[df["media_type"] == "video", "s3_url"] = aws+bucket+"/"+df["filename"]+".mp4"
+    df.loc[df["media_type"] == "text", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
+    df.loc[df["media_type"] == "link", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
+    df.loc[df["media_type"] == "repost", "s3_url"] = aws+bucket+"/"+df["filename"]+".txt"
+    return df, tagwise_duplicates # return df with s3 urls added
 
 def ml_initialize_mongo():
     mongo_url = (
